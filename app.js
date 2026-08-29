@@ -11,12 +11,34 @@ let todos = [
 app.get('/todos', (req, res) => {
   res.status(200).json(todos); // Send array as JSON
 });
-
-// POST New – Create
+// GET Single Todo
+app.get('/todos/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  const todo = todos.find(t => t.id === id);
+  if (!todo) {
+    return res.status(404).json({ error: 'Todo not found' });
+  }
+  res.json(todo);
+});
+// GET Active Todos (not completed)
+app.get('/todos/active', (req, res) => {
+  const active = todos.filter(t => !t.completed);
+  res.json(active);
+});
+// POST New – Create with validation
 app.post('/todos', (req, res) => {
-  const newTodo = { id: todos.length + 1, ...req.body }; // Auto-ID
+  const { task } = req.body;
+  // Validate: task must exist and be a non‑empty string
+  if (!task || typeof task !== 'string' || task.trim() === '') {
+    return res.status(400).json({ error: 'Task field is required and must be a non‑empty string' });
+  }
+  const newTodo = {
+    id: todos.length + 1,
+    task: task.trim(),
+    completed: false,           // default to false
+  };
   todos.push(newTodo);
-  res.status(201).json(newTodo); // Echo back
+  res.status(201).json(newTodo);
 });
 
 // PATCH Update – Partial
@@ -37,11 +59,13 @@ app.delete('/todos/:id', (req, res) => {
   res.status(204).send(); // Silent success
 });
 
+// Existing /todos/completed 
 app.get('/todos/completed', (req, res) => {
   const completed = todos.filter((t) => t.completed);
   res.json(completed); // Custom Read!
 });
 
+// Error handler
 app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Server error!' });
 });
